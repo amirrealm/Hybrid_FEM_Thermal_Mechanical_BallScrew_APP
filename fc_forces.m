@@ -1,0 +1,39 @@
+function [Forces] = fc_forces(Parameters)
+% FC_FORCES - Computes forces acting on the ball-screw system, 
+% including hydrodynamic rolling force (FR) and pressure force (FP).
+% These forces are influenced by lubrication, elasticity, and contact mechanics.
+
+    global Forces
+
+    %% Fraction of Load Shared by a Single Ball
+    % The total force is distributed among all balls in the system.
+    Forces.FB = 1 / Parameters.Geometry.BallNumber;
+
+    %% Hydrodynamic Rolling Force (FR)
+    % FR represents the rolling force due to Poiseuille flow of lubricant in contact.
+    % The force is dependent on the elastic modulus, rolling radius, geometry, and lubrication conditions.
+    % Reference: Lubrication Theory for Rolling Contacts
+    Forces.FR.Nut = 2.86 * (Parameters.Material.ElasticModulu_Ball_Nut) * ...
+                    (Parameters.Calculation.Nut.Rx)^2 * ...
+                    (Parameters.Calculation.Nut.K)^0.348 * ...
+                    (Parameters.Constant.G)^0.022 * ...
+                    (Parameters.Calculation.SpeedParameter_New.Nut)^0.66 * ...
+                    (Parameters.Calculation.loadParameter_New.Nut)^0.47;
+
+    Forces.FR.Screw = 2.86 * (Parameters.Material.ElasticModulu_Ball_Screw) * ...
+                      (Parameters.Calculation.Screw.Rx)^2 * ...
+                      (Parameters.Calculation.Screw.K)^0.348 * ...
+                      (Parameters.Constant.G)^0.022 * ...
+                      (Parameters.Calculation.SpeedParameter_New.Screw)^0.66 * ...
+                      (Parameters.Calculation.loadParameter_New.Screw)^0.47;
+
+    %% Pressure Force Acting on the Center of the Ball (FP)
+    % FP is the pressure force resulting from lubricant flow and rolling contact.
+    % The force accounts for the geometry and movement of the ball relative to the screw and nut.
+    Forces.FP.Nut = 2 * (Forces.FR.Nut) * ...
+                    (1 + ((Parameters.Geometry.D_Ball * cosd(Parameters.Geometry.AngleContact)) / Parameters.Geometry.D_Screw));
+
+    Forces.FP.Screw = 2 * (Forces.FR.Screw) * ...
+                      (1 - ((Parameters.Geometry.D_Ball * cosd(Parameters.Geometry.AngleContact)) / Parameters.Geometry.D_Screw));
+
+end
